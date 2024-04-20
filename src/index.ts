@@ -16,7 +16,7 @@ export default class BezierTween<T extends Instance> {
 	private time: number;
 	private total = 0;
 	private tweenTime: number;
-	public state: Exclude<Enum.PlaybackState, Enum.PlaybackState.Delayed> = Enum.PlaybackState.Begin;
+	public PlaybackState: Exclude<Enum.PlaybackState, Enum.PlaybackState.Delayed> = Enum.PlaybackState.Begin;
 
 	constructor(
 		bezier: Bezier | [x1: number, y1: number, x2: number, y2: number],
@@ -128,8 +128,8 @@ export default class BezierTween<T extends Instance> {
 		return accumulated;
 	}
 
-	public cancel() {
-		this.state = Enum.PlaybackState.Cancelled;
+	public Cancel() {
+		this.PlaybackState = Enum.PlaybackState.Cancelled;
 		this.connection?.Disconnect();
 		this.progress = 0;
 		this.total = 0;
@@ -137,17 +137,17 @@ export default class BezierTween<T extends Instance> {
 			this.instance[property as keyof T] = setting as T[keyof T];
 	}
 
-	public pause() {
-		this.state = Enum.PlaybackState.Paused;
+	public Pause() {
+		this.PlaybackState = Enum.PlaybackState.Paused;
 		this.connection?.Disconnect();
 		this.total = 0;
 	}
 
-	public play() {
-		if (this.state === Enum.PlaybackState.Playing) return;
+	public Play() {
+		if (this.PlaybackState === Enum.PlaybackState.Playing) return;
 
 		task.spawn(() => {
-			this.state = Enum.PlaybackState.Playing;
+			this.PlaybackState = Enum.PlaybackState.Playing;
 			this.connection = RunService.Heartbeat.Connect(deltaTime => {
 				this.total += deltaTime;
 				if (this.progress > this.precision) return;

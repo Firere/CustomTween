@@ -1,6 +1,6 @@
 {
 	"name": "@firere/bezier-tween",
-	"version": "0.0.0",
+	"version": "0.0.1",
 	"description": "A typed module which allows you to use cubic bezier tweens",
 	"main": "out/init.lua",
 	"scripts": {

@@ -7,7 +7,6 @@ type Properties<T extends Instance> = Partial<ExtractMembers<T, Tweenable>>;
 
 export default class BezierTween<T extends Instance> {
 	private bezier: Bezier;
-	private connection?: RBXScriptConnection;
 	private endProperties: Properties<T>;
 	private initialProperties: Properties<T> = {};
 	private instance: T;
@@ -16,6 +15,7 @@ export default class BezierTween<T extends Instance> {
 	private time: number;
 	private total = 0;
 	private tweenTime: number;
+	public connection?: RBXScriptConnection;
 	public PlaybackState: Exclude<Enum.PlaybackState, Enum.PlaybackState.Delayed> = Enum.PlaybackState.Begin;
 
 	constructor(

@@ -17,6 +17,7 @@ export interface BezierTweenInfo {
 }
 
 export default class BezierTween<T extends Instance> {
+	private active = true;
 	private bezier: Bezier;
 	private delay: number;
 	private targetProperties: Properties<T>;
@@ -100,6 +101,16 @@ export default class BezierTween<T extends Instance> {
 			this.Instance[property as never] = setting as never;
 	}
 
+	public Destroy() {
+		this.connection?.Disconnect();
+		this.active = false;
+		const bezier = this.progress / this.precision;
+		for (const [k, v] of pairs(
+			this.getCurrentProperties(this.bezier(this.reversing ? 1 - bezier : bezier)) as object,
+		))
+			this.Instance[k as never] = v as never;
+	}
+
 	public Pause() {
 		if (
 			(
@@ -118,6 +129,7 @@ export default class BezierTween<T extends Instance> {
 	}
 
 	public Play() {
+		if (!this.active) return;
 		if (this.PlaybackState === Enum.PlaybackState.Playing || this.PlaybackState === Enum.PlaybackState.Delayed)
 			return;
 
@@ -130,6 +142,7 @@ export default class BezierTween<T extends Instance> {
 			this.PlaybackState = Enum.PlaybackState.Playing;
 
 			this.connection = RunService.Heartbeat.Connect((deltaTime) => {
+				if (!this.active) return;
 				this.timeElapsed += deltaTime;
 				if (this.progress > this.precision) {
 					if (this.reverses && !this.reversing) {
@@ -146,7 +159,7 @@ export default class BezierTween<T extends Instance> {
 				}
 
 				while (this.timeElapsed >= this.tweenTime) {
-					if (this.PlaybackState !== Enum.PlaybackState.Playing) return;
+					if (this.PlaybackState !== Enum.PlaybackState.Playing || !this.active) return;
 					this.timeElapsed -= this.tweenTime;
 					const bezier = this.progress / this.precision;
 					TweenService.Create(

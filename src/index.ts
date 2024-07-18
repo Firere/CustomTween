@@ -6,7 +6,7 @@ type Properties<T extends Instance> = Partial<ExtractMembers<T, Tweenable>>;
 export default class BezierTween<T extends Instance> {
 	private bezier: Bezier;
 	private delay: number;
-	private end: Properties<T>;
+	private targetProperties: Properties<T>;
 	private initial: Properties<T> = {};
 	private progress = 0;
 	private precision: number;
@@ -20,11 +20,22 @@ export default class BezierTween<T extends Instance> {
 	public Instance: T;
 	public PlaybackState: Enum.PlaybackState = Enum.PlaybackState.Begin;
 
+	/**
+	 *
+	 * @param bezier The rate at which the tween progresses.
+	 * @param instance The `Instance` whose properties are to be tweened.
+	 * @param time The amount of time the tween takes in seconds.
+	 * @param targetProperties A dictionary of properties, and their target values, to be tweened.
+	 * @param repeatCount The number of times the tween repeats after tweening once.
+	 * @param reverses Whether or not the tween does the reverse tween once the initial tween completes.
+	 * @param delay The amount of time that elapses before tween starts in seconds.
+	 * @param precision The number of "keyframes" to produce. The higher this is, the more true to the provided Bezier curve the tween will be - at the expense of performance.
+	 */
 	constructor(
 		bezier: Bezier | [x1: number, y1: number, x2: number, y2: number],
 		instance: T,
 		time: number,
-		endProperties: Properties<T>,
+		targetProperties: Properties<T>,
 		repeatCount = 0,
 		reverses = false,
 		delay = 0,
@@ -33,14 +44,14 @@ export default class BezierTween<T extends Instance> {
 		this.bezier = typeIs(bezier, "function") ? bezier : new Bezier(...bezier);
 		this.Instance = instance;
 		this.time = time;
-		this.end = endProperties;
+		this.targetProperties = targetProperties;
 		this.delay = delay < 0 ? error("Delay cannot be negative") : delay;
 		this.precision = precision;
 		this.repeatsRemaining += repeatCount;
 		this.reverses = reverses;
 		this.tweenTime = this.time / this.precision;
 
-		for (const [property, _] of pairs(endProperties as object))
+		for (const [property, _] of pairs(targetProperties as object))
 			this.initial[property as never] = instance[property as never];
 	}
 
@@ -49,7 +60,7 @@ export default class BezierTween<T extends Instance> {
 		const Lerp = <T extends { Lerp: (this: T, b: T, progress: number) => T }>(a: T, b: T) => a.Lerp(b, progress);
 
 		const current: Properties<T> = {};
-		for (const [k, endSetting] of pairs(this.end as object)) {
+		for (const [k, endSetting] of pairs(this.targetProperties as object)) {
 			const property = k as keyof Properties<T>;
 			const initialSetting = this.initial[property];
 

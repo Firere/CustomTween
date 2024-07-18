@@ -3,6 +3,18 @@ import { RunService, TweenService } from "@rbxts/services";
 
 type Properties<T extends Instance> = Partial<ExtractMembers<T, Tweenable>>;
 
+export interface BezierTweenInfo {
+	/** The amount of time the tween takes in seconds. */
+	time?: number;
+	/** The rate at which the tween progresses. */
+	bezier: Bezier | [x1: number, y1: number, x2: number, y2: number];
+	/** The number of times the tween repeats after tweening once. */
+	repeatCount?: number;
+	/** Whether or not the tween does the reverse tween once the initial tween completes. */
+	reverses?: boolean;
+	delayTime?: number;
+}
+
 export default class BezierTween<T extends Instance> {
 	private bezier: Bezier;
 	private delay: number;
@@ -22,33 +34,21 @@ export default class BezierTween<T extends Instance> {
 
 	/**
 	 *
-	 * @param bezier The rate at which the tween progresses.
 	 * @param instance The `Instance` whose properties are to be tweened.
-	 * @param time The amount of time the tween takes in seconds.
+	 * @param tweenInfo The `BezierTweenInfo` to be used.
 	 * @param targetProperties A dictionary of properties, and their target values, to be tweened.
-	 * @param repeatCount The number of times the tween repeats after tweening once.
-	 * @param reverses Whether or not the tween does the reverse tween once the initial tween completes.
-	 * @param delay The amount of time that elapses before tween starts in seconds.
 	 * @param precision The number of "keyframes" to produce. The higher this is, the more true to the provided Bezier curve the tween will be - at the expense of performance.
 	 */
-	constructor(
-		bezier: Bezier | [x1: number, y1: number, x2: number, y2: number],
-		instance: T,
-		time: number,
-		targetProperties: Properties<T>,
-		repeatCount = 0,
-		reverses = false,
-		delay = 0,
-		precision = 100,
-	) {
+	constructor(instance: T, tweenInfo: BezierTweenInfo, targetProperties: Properties<T>, precision = 100) {
+		const { time, bezier, repeatCount, reverses, delayTime } = tweenInfo;
 		this.bezier = typeIs(bezier, "function") ? bezier : new Bezier(...bezier);
 		this.Instance = instance;
-		this.time = time;
+		this.time = time ?? 1;
 		this.targetProperties = targetProperties;
-		this.delay = delay < 0 ? error("Delay cannot be negative") : delay;
+		this.delay = (delayTime ?? 0) < 0 ? error("Delay cannot be negative") : delayTime ?? 0;
 		this.precision = precision;
-		this.repeatsRemaining += repeatCount;
-		this.reverses = reverses;
+		this.repeatsRemaining += repeatCount ?? 0;
+		this.reverses = reverses ?? false;
 		this.tweenTime = this.time / this.precision;
 
 		for (const [property, _] of pairs(targetProperties as object))

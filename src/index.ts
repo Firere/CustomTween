@@ -1,131 +1,80 @@
 import Bezier from "@rbxts/cubic-bezier";
 import { RunService, TweenService } from "@rbxts/services";
 
-const lerp = (a: number, b: number, t: number) => a + t * (b - a);
-
 type Properties<T extends Instance> = Partial<ExtractMembers<T, Tweenable>>;
 
 export default class BezierTween<T extends Instance> {
 	private bezier: Bezier;
-	private endProperties: Properties<T>;
-	private initialProperties: Properties<T> = {};
-	private instance: T;
+	private delay: number;
+	private end: Properties<T>;
+	private initial: Properties<T> = {};
 	private progress = 0;
 	private precision: number;
 	private time: number;
 	private total = 0;
 	private tweenTime: number;
 	public connection?: RBXScriptConnection;
-	public PlaybackState: Exclude<Enum.PlaybackState, Enum.PlaybackState.Delayed> = Enum.PlaybackState.Begin;
+	public Instance: T;
+	public PlaybackState: Enum.PlaybackState = Enum.PlaybackState.Begin;
 
 	constructor(
 		bezier: Bezier | [x1: number, y1: number, x2: number, y2: number],
 		instance: T,
 		time: number,
 		endProperties: Properties<T>,
-		precision?: number,
+		delay = 0,
+		precision = 100,
 	) {
 		this.bezier = typeIs(bezier, "function") ? bezier : new Bezier(...bezier);
-		this.instance = instance;
+		this.Instance = instance;
 		this.time = time;
-		this.endProperties = endProperties;
-		this.precision = precision ?? 100;
+		this.end = endProperties;
+		this.delay = delay < 0 ? error("Delay cannot be negative") : delay;
+		this.precision = precision;
 		this.tweenTime = this.time / this.precision;
 
 		for (const [property, _] of pairs(endProperties as object))
-			this.initialProperties[property as keyof typeof this.initialProperties] =
-				instance[property as keyof typeof this.initialProperties];
+			this.initial[property as never] = instance[property as never];
 	}
 
 	private getCurrentProperties(progress: number) {
-		const accumulated: Properties<T> = {};
-		for (const [k, setting] of pairs(this.endProperties as object)) {
+		const lerp = (a: number, b: number) => a + progress * (b - a);
+		const Lerp = <T extends { Lerp: (this: T, b: T, progress: number) => T }>(a: T, b: T) => a.Lerp(b, progress);
+
+		const current: Properties<T> = {};
+		for (const [k, endSetting] of pairs(this.end as object)) {
 			const property = k as keyof Properties<T>;
-			switch (true) {
-				case typeIs(setting, "number"): {
-					(accumulated[property] as number) = lerp(
-						this.initialProperties[property] as number,
-						setting,
-						progress,
-					);
-					break;
-				}
+			const initialSetting = this.initial[property];
 
-				case typeIs(setting, "boolean"): {
-					(accumulated[property] as boolean) =
-						progress === 1 ? setting : (this.initialProperties[property] as boolean);
-					break;
-				}
-
-				case typeIs(setting, "CFrame"): {
-					(accumulated[property] as CFrame) = (this.initialProperties[property] as CFrame).Lerp(
-						setting,
-						progress,
-					);
-					break;
-				}
-
-				case typeIs(setting, "Rect"): {
-					const initial = this.initialProperties[property] as Rect;
-					(accumulated[property] as Rect) = new Rect(
-						initial.Min.Lerp(setting.Min, progress),
-						initial.Max.Lerp(setting.Max, progress),
-					);
-					break;
-				}
-
-				case typeIs(setting, "Color3"): {
-					(accumulated[property] as Color3) = (this.initialProperties[property] as Color3).Lerp(
-						setting,
-						progress,
-					);
-					break;
-				}
-
-				case typeIs(setting, "UDim"): {
-					const initial = this.initialProperties[property] as UDim;
-					(accumulated[property] as UDim) = new UDim(
-						lerp(initial.Scale, setting.Scale, progress),
-						lerp(initial.Offset, setting.Offset, progress),
-					);
-					break;
-				}
-
-				case typeIs(setting, "UDim2"): {
-					(accumulated[property] as UDim2) = (this.initialProperties[property] as UDim2).Lerp(
-						setting,
-						progress,
-					);
-					break;
-				}
-
-				case typeIs(setting, "Vector2"): {
-					(accumulated[property] as Vector2) = (this.initialProperties[property] as Vector2).Lerp(
-						setting,
-						progress,
-					);
-					break;
-				}
-
-				case typeIs(setting, "Vector2int16"): {
-					const initial = this.initialProperties[property] as Vector2int16;
-					(accumulated[property] as Vector2int16) = new Vector2int16(
-						lerp(initial.X, setting.X, progress),
-						lerp(initial.Y, setting.Y, progress),
-					);
-					break;
-				}
-
-				case typeIs(setting, "Vector3"): {
-					(accumulated[property] as Vector3) = (this.initialProperties[property] as Vector3).Lerp(
-						setting,
-						progress,
-					);
-					break;
-				}
+			if (["CFrame", "Color3", "UDim2", "Vector2", "Vector3"].includes(typeOf(endSetting))) {
+				current[property] = Lerp(initialSetting as never, endSetting as never);
+				continue;
 			}
+
+			current[property] = {
+				number: lerp(initialSetting as number, endSetting as number),
+				boolean: progress === 1 ? endSetting : initialSetting,
+				Rect: new Rect(
+					Lerp((initialSetting as Rect).Min, (endSetting as Rect).Min),
+					Lerp((initialSetting as Rect).Max, (endSetting as Rect).Max),
+				),
+				UDim: new UDim(
+					lerp((initialSetting as UDim).Scale, (endSetting as UDim).Scale),
+					lerp((initialSetting as UDim).Offset, (endSetting as UDim).Offset),
+				),
+				Vector2int16: new Vector2int16(
+					lerp((initialSetting as Vector2int16).X, (endSetting as Vector2int16).X),
+					lerp((initialSetting as Vector2int16).Y, (endSetting as Vector2int16).Y),
+				),
+			}[typeOf(endSetting) as never];
 		}
-		return accumulated;
+
+		return current;
+	}
+
+	private reset() {
+		for (const [property, setting] of pairs(this.initial as object))
+			this.Instance[property as never] = setting as never;
 	}
 
 	public Cancel() {
@@ -133,29 +82,45 @@ export default class BezierTween<T extends Instance> {
 		this.connection?.Disconnect();
 		this.progress = 0;
 		this.total = 0;
-		for (const [property, setting] of pairs(this.initialProperties as object))
-			this.instance[property as keyof T] = setting as T[keyof T];
+		this.reset();
 	}
 
 	public Pause() {
+		if (
+			this.PlaybackState === Enum.PlaybackState.Begin ||
+			this.PlaybackState === Enum.PlaybackState.Cancelled ||
+			this.PlaybackState === Enum.PlaybackState.Completed ||
+			this.PlaybackState === Enum.PlaybackState.Delayed
+		)
+			return;
 		this.PlaybackState = Enum.PlaybackState.Paused;
 		this.connection?.Disconnect();
 		this.total = 0;
 	}
 
 	public Play() {
-		if (this.PlaybackState === Enum.PlaybackState.Playing) return;
+		if (this.PlaybackState === Enum.PlaybackState.Playing || this.PlaybackState === Enum.PlaybackState.Delayed)
+			return;
 
 		task.spawn(() => {
+			if (this.delay > 0) {
+				this.PlaybackState = Enum.PlaybackState.Delayed;
+				task.wait(this.delay);
+			}
+
 			this.PlaybackState = Enum.PlaybackState.Playing;
-			this.connection = RunService.Heartbeat.Connect(deltaTime => {
+
+			this.connection = RunService.Heartbeat.Connect((deltaTime) => {
 				this.total += deltaTime;
-				if (this.progress > this.precision) return;
+				if (this.progress > this.precision) {
+					this.PlaybackState = Enum.PlaybackState.Completed;
+					return;
+				}
 
 				while (this.total >= this.tweenTime) {
 					this.total -= this.tweenTime;
 					TweenService.Create(
-						this.instance,
+						this.Instance,
 						new TweenInfo(this.tweenTime, Enum.EasingStyle.Linear),
 						this.getCurrentProperties(this.bezier(this.progress / this.precision)),
 					).Play();

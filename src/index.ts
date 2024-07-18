@@ -10,8 +10,11 @@ export default class BezierTween<T extends Instance> {
 	private initial: Properties<T> = {};
 	private progress = 0;
 	private precision: number;
+	private repeatsRemaining = 1;
+	private reverses: boolean;
+	private reversing = false;
 	private time: number;
-	private total = 0;
+	private timeElapsed = 0;
 	private tweenTime: number;
 	public connection?: RBXScriptConnection;
 	public Instance: T;
@@ -22,6 +25,8 @@ export default class BezierTween<T extends Instance> {
 		instance: T,
 		time: number,
 		endProperties: Properties<T>,
+		repeatCount = 0,
+		reverses = false,
 		delay = 0,
 		precision = 100,
 	) {
@@ -31,6 +36,8 @@ export default class BezierTween<T extends Instance> {
 		this.end = endProperties;
 		this.delay = delay < 0 ? error("Delay cannot be negative") : delay;
 		this.precision = precision;
+		this.repeatsRemaining += repeatCount;
+		this.reverses = reverses;
 		this.tweenTime = this.time / this.precision;
 
 		for (const [property, _] of pairs(endProperties as object))
@@ -72,30 +79,30 @@ export default class BezierTween<T extends Instance> {
 		return current;
 	}
 
-	private reset() {
+	public Cancel() {
+		if (this.PlaybackState === Enum.PlaybackState.Begin) this.PlaybackState = Enum.PlaybackState.Cancelled;
+		this.connection?.Disconnect();
+		this.progress = 0;
+		this.timeElapsed = 0;
 		for (const [property, setting] of pairs(this.initial as object))
 			this.Instance[property as never] = setting as never;
 	}
 
-	public Cancel() {
-		this.PlaybackState = Enum.PlaybackState.Cancelled;
-		this.connection?.Disconnect();
-		this.progress = 0;
-		this.total = 0;
-		this.reset();
-	}
-
 	public Pause() {
 		if (
-			this.PlaybackState === Enum.PlaybackState.Begin ||
-			this.PlaybackState === Enum.PlaybackState.Cancelled ||
-			this.PlaybackState === Enum.PlaybackState.Completed ||
-			this.PlaybackState === Enum.PlaybackState.Delayed
+			(
+				[
+					Enum.PlaybackState.Begin,
+					Enum.PlaybackState.Cancelled,
+					Enum.PlaybackState.Completed,
+					Enum.PlaybackState.Delayed,
+				] as Enum.PlaybackState[]
+			).includes(this.PlaybackState)
 		)
 			return;
 		this.PlaybackState = Enum.PlaybackState.Paused;
 		this.connection?.Disconnect();
-		this.total = 0;
+		this.timeElapsed = 0;
 	}
 
 	public Play() {
@@ -111,18 +118,29 @@ export default class BezierTween<T extends Instance> {
 			this.PlaybackState = Enum.PlaybackState.Playing;
 
 			this.connection = RunService.Heartbeat.Connect((deltaTime) => {
-				this.total += deltaTime;
+				this.timeElapsed += deltaTime;
 				if (this.progress > this.precision) {
-					this.PlaybackState = Enum.PlaybackState.Completed;
-					return;
+					if (this.reverses && !this.reversing) {
+						this.progress = 0;
+						this.reversing = true;
+					} else {
+						this.connection?.Disconnect();
+						this.PlaybackState = Enum.PlaybackState.Completed;
+						this.progress = 0;
+						this.repeatsRemaining -= 1;
+						this.reversing = false;
+						if (this.repeatsRemaining !== 0) this.Play();
+					}
 				}
 
-				while (this.total >= this.tweenTime) {
-					this.total -= this.tweenTime;
+				while (this.timeElapsed >= this.tweenTime) {
+					if (this.PlaybackState !== Enum.PlaybackState.Playing) return;
+					this.timeElapsed -= this.tweenTime;
+					const bezier = this.progress / this.precision;
 					TweenService.Create(
 						this.Instance,
 						new TweenInfo(this.tweenTime, Enum.EasingStyle.Linear),
-						this.getCurrentProperties(this.bezier(this.progress / this.precision)),
+						this.getCurrentProperties(this.bezier(this.reversing ? 1 - bezier : bezier)),
 					).Play();
 					this.progress++;
 				}

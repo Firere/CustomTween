@@ -12,6 +12,7 @@ export interface BezierTweenInfo {
 	repeatCount?: number;
 	/** Whether or not the tween does the reverse tween once the initial tween completes. */
 	reverses?: boolean;
+	/** The amount of time that elapses before tween starts in seconds. */
 	delayTime?: number;
 }
 

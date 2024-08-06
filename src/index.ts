@@ -71,22 +71,31 @@ export default class BezierTween<T extends Instance> {
 				continue;
 			}
 
-			current[property] = {
-				number: lerp(initialSetting as number, endSetting as number),
-				boolean: progress === 1 ? endSetting : initialSetting,
-				Rect: new Rect(
-					Lerp((initialSetting as Rect).Min, (endSetting as Rect).Min),
-					Lerp((initialSetting as Rect).Max, (endSetting as Rect).Max),
-				),
-				UDim: new UDim(
-					lerp((initialSetting as UDim).Scale, (endSetting as UDim).Scale),
-					lerp((initialSetting as UDim).Offset, (endSetting as UDim).Offset),
-				),
-				Vector2int16: new Vector2int16(
-					lerp((initialSetting as Vector2int16).X, (endSetting as Vector2int16).X),
-					lerp((initialSetting as Vector2int16).Y, (endSetting as Vector2int16).Y),
-				),
-			}[typeOf(endSetting) as never];
+			switch (typeOf(endSetting)) {
+				case "number":
+					current[property] = lerp(initialSetting as number, endSetting as number) as never;
+					break;
+				case "boolean":
+					current[property] = (progress === 1 ? endSetting : initialSetting) as never;
+					break;
+				case "Rect":
+					current[property] = new Rect(
+						Lerp((initialSetting as Rect).Min, (endSetting as Rect).Min),
+						Lerp((initialSetting as Rect).Max, (endSetting as Rect).Max),
+					) as never;
+					break;
+				case "UDim":
+					current[property] = new UDim(
+						lerp((initialSetting as UDim).Scale, (endSetting as UDim).Scale),
+						lerp((initialSetting as UDim).Offset, (endSetting as UDim).Offset),
+					) as never;
+					break;
+				case "Vector2int16":
+					current[property] = new Vector2int16(
+						lerp((initialSetting as Vector2int16).X, (endSetting as Vector2int16).X),
+						lerp((initialSetting as Vector2int16).Y, (endSetting as Vector2int16).Y),
+					) as never;
+			}
 		}
 
 		return current;

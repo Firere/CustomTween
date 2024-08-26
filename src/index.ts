@@ -113,11 +113,6 @@ export default class BezierTween<T extends Instance> {
 	public Destroy() {
 		this.connection?.Disconnect();
 		this.active = false;
-		const bezier = this.progress / this.precision;
-		for (const [k, v] of pairs(
-			this.getCurrentProperties(this.bezier(this.reversing ? 1 - bezier : bezier)) as object,
-		))
-			this.Instance[k as never] = v as never;
 	}
 
 	public Pause() {

@@ -47,7 +47,7 @@ export default class BezierTween<T extends Instance> {
 		this.Instance = instance;
 		this.time = time ?? 1;
 		this.targetProperties = targetProperties;
-		this.delay = (delayTime ?? 0) < 0 ? error("Delay cannot be negative") : delayTime ?? 0;
+		this.delay = (delayTime ?? 0) < 0 ? error("Delay cannot be negative") : (delayTime ?? 0);
 		this.precision = precision;
 		this.repeatsRemaining += repeatCount ?? 0;
 		this.reverses = reverses ?? false;

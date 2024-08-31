@@ -4,9 +4,9 @@
 	"description": "A typed module which allows you to use cubic Bezier tweens in Roblox",
 	"main": "out/init.lua",
 	"scripts": {
-		"build": "rbxtsc",
-		"watch": "rbxtsc -w",
-		"prepublishOnly": "pnpm run build"
+		"build": "bun rbxtsc",
+		"watch": "bun rbxtsc -w",
+		"prepublishOnly": "bun run build"
 	},
 	"keywords": [],
 	"author": "Firere",

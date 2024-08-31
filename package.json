@@ -1,7 +1,7 @@
 {
-	"name": "@firere/bezier-tween",
-	"version": "1.0.2",
-	"description": "A typed module which allows you to use cubic Bezier tweens in Roblox",
+	"name": "@firere/custom-tween",
+	"version": "1.0.0",
+	"description": "A typed module which allows you to use tweens in Roblox with your own easing function",
 	"main": "out/init.lua",
 	"scripts": {
 		"build": "bun rbxtsc",
@@ -10,11 +10,11 @@
 	},
 	"keywords": [],
 	"author": "Firere",
-	"license": "GPL-3.0-only",
-	"homepage": "https://github.com/Firere/bezier-tween",
+	"license": "LGPL-2.1-or-later",
+	"homepage": "https://github.com/Firere/CustomTween",
 	"repository": {
 		"type": "github",
-		"url": "git+https://github.com/Firere/bezier-tween.git"
+		"url": "git+https://github.com/Firere/CustomTween.git"
 	},
 	"types": "out/index.d.ts",
 	"files": [
@@ -38,7 +38,6 @@
 		"typescript": "^5.4.5"
 	},
 	"dependencies": {
-		"@rbxts/cubic-bezier": "^1.1.0",
 		"@rbxts/services": "^1.5.4"
 	}
 }

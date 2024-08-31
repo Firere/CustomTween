@@ -1,13 +1,14 @@
-import Bezier from "@rbxts/cubic-bezier";
 import { RunService, TweenService } from "@rbxts/services";
 
 type Properties<T extends Instance> = Partial<ExtractMembers<T, Tweenable>>;
 
-export interface BezierTweenInfo {
+export type EasingFunction = (x: number) => number;
+
+export interface CustomTweenInfo {
 	/** The amount of time the tween takes in seconds. */
 	time?: number;
 	/** The rate at which the tween progresses. */
-	bezier: Bezier | [x1: number, y1: number, x2: number, y2: number];
+	easing: EasingFunction;
 	/** The number of times the tween repeats after tweening once. */
 	repeatCount?: number;
 	/** Whether or not the tween does the reverse tween once the initial tween completes. */
@@ -16,10 +17,10 @@ export interface BezierTweenInfo {
 	delayTime?: number;
 }
 
-export default class BezierTween<T extends Instance> {
+export default class CustomTween<T extends Instance> {
 	private active = true;
-	private bezier: Bezier;
 	private delay: number;
+	private easing: EasingFunction;
 	private targetProperties: Properties<T>;
 	private initial: Properties<T> = {};
 	private progress = 0;
@@ -37,13 +38,13 @@ export default class BezierTween<T extends Instance> {
 	/**
 	 *
 	 * @param instance The `Instance` whose properties are to be tweened.
-	 * @param tweenInfo The `BezierTweenInfo` to be used.
+	 * @param tweenInfo The `CustomTweenInfo` to be used.
 	 * @param targetProperties A dictionary of properties, and their target values, to be tweened.
-	 * @param precision The number of "keyframes" to produce. The higher this is, the more true to the provided Bezier curve the tween will be - at the expense of performance.
+	 * @param precision The number of "keyframes" to produce. The higher this is, the more true to the provided easing function the tween will be - at the expense of performance.
 	 */
-	constructor(instance: T, tweenInfo: BezierTweenInfo, targetProperties: Properties<T>, precision = 100) {
-		const { time, bezier, repeatCount, reverses, delayTime } = tweenInfo;
-		this.bezier = typeIs(bezier, "function") ? bezier : new Bezier(...bezier);
+	constructor(instance: T, tweenInfo: CustomTweenInfo, targetProperties: Properties<T>, precision = 100) {
+		const { time, easing, repeatCount, reverses, delayTime } = tweenInfo;
+		this.easing = easing;
 		this.Instance = instance;
 		this.time = time ?? 1;
 		this.targetProperties = targetProperties;
@@ -165,11 +166,11 @@ export default class BezierTween<T extends Instance> {
 				while (this.timeElapsed >= this.tweenTime) {
 					if (this.PlaybackState !== Enum.PlaybackState.Playing || !this.active) return;
 					this.timeElapsed -= this.tweenTime;
-					const bezier = this.progress / this.precision;
+					const x = this.progress / this.precision;
 					TweenService.Create(
 						this.Instance,
 						new TweenInfo(this.tweenTime, Enum.EasingStyle.Linear),
-						this.getCurrentProperties(this.bezier(this.reversing ? 1 - bezier : bezier)),
+						this.getCurrentProperties(this.easing(this.reversing ? 1 - x : x)),
 					).Play();
 					this.progress++;
 				}

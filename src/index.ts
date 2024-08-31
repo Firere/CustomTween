@@ -62,38 +62,38 @@ export default class BezierTween<T extends Instance> {
 		const Lerp = <T extends { Lerp: (this: T, b: T, progress: number) => T }>(a: T, b: T) => a.Lerp(b, progress);
 
 		const current: Properties<T> = {};
-		for (const [k, endSetting] of pairs(this.targetProperties as object)) {
+		for (const [k, targetSetting] of pairs(this.targetProperties as object)) {
 			const property = k as keyof Properties<T>;
 			const initialSetting = this.initial[property];
 
-			if (["CFrame", "Color3", "UDim2", "Vector2", "Vector3"].includes(typeOf(endSetting))) {
-				current[property] = Lerp(initialSetting as never, endSetting as never);
+			if (["CFrame", "Color3", "UDim2", "Vector2", "Vector3"].includes(typeOf(targetSetting))) {
+				current[property] = Lerp(initialSetting as never, targetSetting as never);
 				continue;
 			}
 
-			switch (typeOf(endSetting)) {
+			switch (typeOf(targetSetting)) {
 				case "number":
-					current[property] = lerp(initialSetting as number, endSetting as number) as never;
+					current[property] = lerp(initialSetting as number, targetSetting as number) as never;
 					break;
 				case "boolean":
-					current[property] = (progress === 1 ? endSetting : initialSetting) as never;
+					current[property] = (progress === 1 ? targetSetting : initialSetting) as never;
 					break;
 				case "Rect":
 					current[property] = new Rect(
-						Lerp((initialSetting as Rect).Min, (endSetting as Rect).Min),
-						Lerp((initialSetting as Rect).Max, (endSetting as Rect).Max),
+						Lerp((initialSetting as Rect).Min, (targetSetting as Rect).Min),
+						Lerp((initialSetting as Rect).Max, (targetSetting as Rect).Max),
 					) as never;
 					break;
 				case "UDim":
 					current[property] = new UDim(
-						lerp((initialSetting as UDim).Scale, (endSetting as UDim).Scale),
-						lerp((initialSetting as UDim).Offset, (endSetting as UDim).Offset),
+						lerp((initialSetting as UDim).Scale, (targetSetting as UDim).Scale),
+						lerp((initialSetting as UDim).Offset, (targetSetting as UDim).Offset),
 					) as never;
 					break;
 				case "Vector2int16":
 					current[property] = new Vector2int16(
-						lerp((initialSetting as Vector2int16).X, (endSetting as Vector2int16).X),
-						lerp((initialSetting as Vector2int16).Y, (endSetting as Vector2int16).Y),
+						lerp((initialSetting as Vector2int16).X, (targetSetting as Vector2int16).X),
+						lerp((initialSetting as Vector2int16).Y, (targetSetting as Vector2int16).Y),
 					) as never;
 			}
 		}

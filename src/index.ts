@@ -49,7 +49,7 @@ export default class BezierTween<T extends Instance> {
 		this.targetProperties = targetProperties;
 		this.delay = (delayTime ?? 0) < 0 ? error("Delay cannot be negative") : (delayTime ?? 0);
 		this.precision = precision;
-		this.repeatsRemaining += repeatCount ?? 0;
+		this.repeatsRemaining += (repeatCount ?? 0) < 0 ? -1 : (repeatCount ?? 0);
 		this.reverses = reverses ?? false;
 		this.tweenTime = this.time / this.precision;
 
@@ -156,7 +156,7 @@ export default class BezierTween<T extends Instance> {
 						this.connection?.Disconnect();
 						this.PlaybackState = Enum.PlaybackState.Completed;
 						this.progress = 0;
-						this.repeatsRemaining -= 1;
+						if (this.repeatsRemaining >= 0) this.repeatsRemaining -= 1;
 						this.reversing = false;
 						if (this.repeatsRemaining !== 0) this.Play();
 					}

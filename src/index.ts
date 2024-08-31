@@ -53,7 +53,7 @@ export default class BezierTween<T extends Instance> {
 		this.reverses = reverses ?? false;
 		this.tweenTime = this.time / this.precision;
 
-		for (const [property, _] of pairs(targetProperties as object))
+		for (const [property] of pairs(targetProperties as object))
 			this.initial[property as never] = instance[property as never];
 	}
 

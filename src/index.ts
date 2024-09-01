@@ -3,6 +3,7 @@ import { RunService, TweenService } from "@rbxts/services";
 type Properties<T extends Instance> = Partial<ExtractMembers<T, Tweenable>>;
 
 export type EasingFunction = (x: number) => number;
+export type Callback = (playbackState: Enum.PlaybackState) => void;
 
 export interface CustomTweenInfo {
 	/** The amount of time the tween takes in seconds. */
@@ -15,10 +16,13 @@ export interface CustomTweenInfo {
 	reverses?: boolean;
 	/** The amount of time that elapses before tween starts in seconds. */
 	delayTime?: number;
+	/** Fires when the tween finishes playing or when stopped with `CustomTween.Cancel()`.  */
+	callback?: Callback;
 }
 
 export default class CustomTween<T extends Instance> {
 	private active = true;
+	private callback?: Callback;
 	private delay: number;
 	private easing: EasingFunction;
 	private targetProperties: Properties<T>;
@@ -43,7 +47,7 @@ export default class CustomTween<T extends Instance> {
 	 * @param precision The number of "keyframes" to produce. The higher this is, the more true to the provided easing function the tween will be - at the expense of performance.
 	 */
 	constructor(instance: T, tweenInfo: CustomTweenInfo, targetProperties: Properties<T>, precision = 100) {
-		const { time, easing, repeatCount, reverses, delayTime } = tweenInfo;
+		const { time, easing, repeatCount, reverses, delayTime, callback } = tweenInfo;
 		this.easing = easing;
 		this.Instance = instance;
 		this.time = time ?? 1;
@@ -53,6 +57,7 @@ export default class CustomTween<T extends Instance> {
 		this.repeatsRemaining += (repeatCount ?? 0) < 0 ? -1 : (repeatCount ?? 0);
 		this.reverses = reverses ?? false;
 		this.tweenTime = this.time / this.precision;
+		this.callback = callback;
 
 		for (const [property] of pairs(targetProperties as object))
 			this.initial[property as never] = instance[property as never];
@@ -109,11 +114,14 @@ export default class CustomTween<T extends Instance> {
 		this.timeElapsed = 0;
 		for (const [property, setting] of pairs(this.initial as object))
 			this.Instance[property as never] = setting as never;
+
+		this.callback?.(this.PlaybackState);
 	}
 
 	public Destroy() {
 		this.connection?.Disconnect();
 		this.active = false;
+		this.callback?.(this.PlaybackState);
 	}
 
 	public Pause() {
@@ -159,7 +167,7 @@ export default class CustomTween<T extends Instance> {
 						this.progress = 0;
 						if (this.repeatsRemaining >= 0) this.repeatsRemaining -= 1;
 						this.reversing = false;
-						if (this.repeatsRemaining !== 0) this.Play();
+						this.repeatsRemaining === 0 ? this.callback?.(this.PlaybackState) : this.Play();
 					}
 				}
 
